@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+       
+        .axis--x text {
+            fill: gray; 
+            font-family:  sans-serif; 
+            font-size: 16px; 
+        }
+
+       
+        .axis--x path {
+            stroke: gray; 
+            stroke-width: 2px; 
+        }
+
+      
+        .axis--x .tick line {
+            display: none;
+        }
+
+       
+        .custom-label {
+            font-family: sans-serif; 
+            font-size: 18px; 
+            fill: gray; 
+        }
+
+       
+        
+        .legend circle {
+            fill: #ccc;
+            stroke: none;
+        }
+
+        .legend text {
+            font-family: sans-serif;
+            font-size: 16px;
+            fill: gray;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="my_dataviz"></div>
+
+    <script>
+        
+        var margin = { top: 0, right: 100, bottom: 120, left: 50 }, 
+            width = 800 - margin.left - margin.right,
+            height = 800 - margin.top - margin.bottom;
+
+        var groups = ["FY18", "FY19", "FY20", "FY21", "FY22"];
+        var subgroups = ["IPO", "Common", "Preferred", "Others"];
+
+        var x = d3.scaleBand()
+            .domain(groups)
+            .range([0, width])
+            .padding([0.4]);
+
+        var svg = d3.select("#my_dataviz")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x).tickSizeOuter(0))
+            .selectAll(".tick text")
+            .attr("y", 20); 
+
+        var y = d3.scaleLinear()
+            .domain([0, 60])
+            .range([height, 0]);
+
+        var color = d3.scaleOrdinal()
+            .domain(subgroups)
+            .range(['#cbdcf5', '#a4bada', '#7991b5', '#2f4a6d']);
+
+        var data = [
+            { group: "FY18", IPO: 0, Common: 0, Preferred: 0, Others: 0 },
+            { group: "FY19", IPO: 12, Common: 0, Preferred: 0, Others: 0 },
+            { group: "FY20", IPO: 0, Common: 0, Preferred: 0, Others: 0 },
+            { group: "FY21", IPO: 6, Common: 5, Preferred: 8, Others: 8 },
+            { group: "FY22", IPO: 0, Common: 0, Preferred: 0, Others: 0 }
+        ];
+
+        var stackedData = d3.stack().keys(subgroups)(data);
+
+        svg.append("g")
+            .selectAll("g")
+            .data(stackedData)
+            .enter().append("g")
+            .attr("fill", function(d) { return color(d.key); })
+            .selectAll("rect")
+            .data(function(d) { return d; })
+            .enter().append("rect")
+            .attr("x", function(d) { return x(d.data.group); })
+            .attr("y", function(d) { return y(d[1]); })
+            .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+            .attr("width", x.bandwidth());
+
+        
+        svg.selectAll("text.custom-label")
+            .data(data)
+            .enter().append("text")
+            .filter(function(d) { return d.IPO + d.Common + d.Preferred + d.Others > 0; }) 
+            .attr("class", "custom-label")
+            .attr("x", function(d) { return x(d.group) + x.bandwidth() / 2; })
+            .attr("y", function(d) {
+                let totalHeight = d.IPO + d.Common + d.Preferred + d.Others;
+                let padding = 20;
+                return y(totalHeight) - padding;
+            })
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .text(function(d) {
+                let totalHeight = d.IPO + d.Common + d.Preferred + d.Others;
+                return "$" + totalHeight + "m"; 
+            });
+            var legendX = width + 10;
+        var legendY = (y.range()[0] + y.range()[1]) / 2 - (subgroups.length ) / 2+100;
+
+        
+        var legend = svg.selectAll(".legend")
+            .data(subgroups)
+            .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) {return "translate(" + (width  + 18) + "," + (legendY + i * 60) + ")"; });
+
+       
+        legend.append("circle")
+            .attr("r", 8) 
+            .style("fill", function(d) { return color(d); });
+
+       
+        legend.append("text")
+            .attr("x", 15) 
+            .attr("dy", "0.35em")
+            .style("text-anchor", "start")
+            .text(function(d) { return d; });
+    </script>
+</body>
+
+</html>
